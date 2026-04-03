@@ -151,12 +151,18 @@ def readColmapSceneInfo(path, images, eval, llffhold=8):
     cam_infos_unsorted = readColmapCameras(cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics, images_folder=reading_dir)
     cam_infos = sorted(cam_infos_unsorted.copy(), key = lambda x : x.image_name)
 
+    all_imgs = sorted(os.listdir(reading_dir))
+    train_imgs = [c.split('.')[0] for idx, c in enumerate(all_imgs) if idx % llffhold != 0]
+    test_imgs = [c.split('.')[0] for idx, c in enumerate(all_imgs) if idx % llffhold == 0]
     if eval:
-        train_cam_infos = [c for idx, c in enumerate(cam_infos) if idx % llffhold != 0]
-        test_cam_infos = [c for idx, c in enumerate(cam_infos) if idx % llffhold == 0]
+        train_cam_infos = [c for c in cam_infos if c.image_name in train_imgs]
+        test_cam_infos = [c for c in cam_infos if c.image_name in test_imgs]
     else:
-        train_cam_infos = cam_infos
+        train_cam_infos = [c for c in cam_infos if c.image_name in train_imgs]
         test_cam_infos = []
+    sys.stdout.write("Using {}/{} images for training...\n".format(len(train_cam_infos), len(train_imgs)))
+    sys.stdout.write("Using {}/{} images for testing...\n".format(len(test_cam_infos), len(test_imgs)))
+    sys.stdout.flush()
 
     nerf_normalization = getNerfppNorm(train_cam_infos)
 
